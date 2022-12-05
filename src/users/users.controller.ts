@@ -89,14 +89,3 @@ export class UserController {
     return this.userService.deleteAlumno(id);
   }
 }
-function ApiSchema(arg0: {
-  type: string;
-  properties: {
-    nombre: { type: string };
-    apellido: { type: string };
-    correo: { type: string };
-    rut: { type: string };
-  };
-}) {
-  throw new Error('Function not implemented.');
-}
