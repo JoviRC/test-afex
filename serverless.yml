@@ -1,0 +1,88 @@
+service: nestjs-serverless-dynamo
+plugins:
+  - serverless-plugin-optimize
+  - serverless-offline
+  - serverless-dynamodb-local
+useDotenv: true
+functions:
+  app:
+    handler: dist/serverless.handler
+    events:
+      - http:
+          method: ANY
+          path: /
+      - http:
+          method: ANY
+          path: '{proxy+}'
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: ${opt:stage, 'dev'}
+  region: 'us-east-1'
+  apiGateway:
+    shouldStartNameWithService: true
+  environment:
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    AWS_SDK_LOAD_CONFIG: 1
+    NODE_OPTIONS: --enable-source-maps --stack-trace-limit=1000
+    DYNAMODB_ENDPOINT: ${self:custom.endpoints.dynamodbURL}
+    NODE_ENV: ${env:NODE_ENV}
+    IS_OFFLINE: ${env:IS_OFFLINE}
+    DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT}
+    AWS_ACCESS_KEY_ID: ${env:AWS_ACCESS_KEY_ID}
+    AWS_SECRET_ACCESS_KEY: ${env:AWS_SECRET_ACCESS_KEY}
+    AWS_REGION: ${env:AWS_REGION}
+    AWS_PUBLIC_CLUSTER_NAME: ${env:AWS_PUBLIC_CLUSTER_NAME}
+  iam:
+    role:
+      statements:
+        - Effect: 'Allow'
+          Action:
+            - 'dynamodb:DescribeTable'
+            - 'dynamodb:Query'
+            - 'dynamodb:Scan'
+            - 'dynamodb:GetItem'
+            - 'dynamodb:PutItem'
+            - 'dynamodb:UpdateItem'
+            - 'dynamodb:DeleteItem'
+
+          Resource: arn:aws:dynamodb:us-east-1:178994486873:table/UsuariosTable
+
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: aws-sdk
+    target: node14
+    define: 'require.resolve: undefined'
+    platform: node
+    concurrency: 10
+
+  dynamodb:
+    start:
+      port: 6000
+      inMemory: true
+      migrate: true
+    stages: dev
+  endpoints:
+    dynamodbURL: 'http://localhost:8000'
+
+resources:
+  Resources:
+    UsuariosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: UsuariosTable
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
